@@ -16,9 +16,13 @@ var rootCmd = &cobra.Command{
 	Short: "A brief description of your application",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		// request.GetProduct(product, min, max, output, descFilter, show)
-		request.PageNumberDolap(product, min, max, output, descFilter, show)
-		request.PageSahibinden(product, min, max, descFilter, show, output)
+
+		if ascending && descending {
+			panic("You can't give this parameters at the same time")
+		}
+
+		// request.PageSahibinden(product, min, max, descFilter, show, output, ascending, descending, limit)
+		request.PageNumberDolap(product, min, max, output, descFilter, show, ascending, descending, limit)
 	},
 }
 
@@ -35,6 +39,9 @@ var max int
 var output string
 var descFilter string
 var show bool
+var ascending bool
+var descending bool
+var limit int
 
 func init() {
 
@@ -42,6 +49,10 @@ func init() {
 	rootCmd.Flags().IntVarP(&min, "min", "", -1, "Minimum price")
 	rootCmd.Flags().IntVarP(&max, "max", "", -1, "Maximum price")
 	rootCmd.Flags().StringVarP(&product, "product", "p", "", "Product name")
-	rootCmd.Flags().StringVarP(&descFilter, "desc", "d", "", "Description filter")
+	rootCmd.Flags().StringVarP(&descFilter, "", "d", "", "Description filter")
 	rootCmd.Flags().StringVarP(&output, "output", "o", "", "Output name")
+
+	rootCmd.Flags().BoolVarP(&ascending, "asc", "", false, "Ascending order")
+	rootCmd.Flags().BoolVarP(&descending, "desc", "", false, "Descending order")
+	rootCmd.Flags().IntVarP(&limit, "limit", "l", -1, "Limit output")
 }

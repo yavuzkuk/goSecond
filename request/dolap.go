@@ -2,7 +2,7 @@ package request
 
 import (
 	"fmt"
-	"log"
+	"go2Second/settings"
 	"os"
 	"strconv"
 	"strings"
@@ -13,46 +13,48 @@ import (
 )
 
 var topPage int = 0
+var dolapLimit int = 0
 var productMap map[string]string
-var Products []Product
+var dolapProducts []settings.Product
 
-type Product struct {
-	URL   string
-	Desc  string
-	Price string
-}
+// var urls map[string]string
 
-func PageNumberDolap(parameter string, min int, max int, output string, descFilter string, show bool) {
+func PageNumberDolap(parameter string, min int, max int, output string, descFilter string, show bool, ascending bool, descending bool, limit int) {
+	var order string
 	url := "https://dolap.com/ara?q=" + parameter
+
+	if ascending {
+		order = "&sira=artan-fiyat"
+		url = url + order
+	} else if descending {
+		order = "&sira=azalan-fiyat"
+		url = url + order
+	}
+
+	fmt.Println("İstek atılıyor ----> ", url)
 
 	service, err := selenium.NewChromeDriverService("C:\\WebDriver\\chromedriver.exe", 4444)
 
-	if err != nil {
-		log.Fatal("Error:", err)
-	}
+	settings.ErrorHandler(err)
 
 	defer service.Stop()
 
 	caps := selenium.Capabilities{}
 	caps.AddChrome(chrome.Capabilities{Args: []string{
-		"--headless",
+		// "--headless",
 	}})
 
 	driver, err := selenium.NewRemote(caps, "")
-	if err != nil {
-		log.Fatal("Error:", err)
-	}
+
+	settings.ErrorHandler(err)
 
 	err = driver.Get(url)
-	if err != nil {
-		log.Fatal("Error:", err)
-	}
+	settings.ErrorHandler(err)
 
 	ul, err := driver.FindElements(selenium.ByCSSSelector, "ul.pagination.other")
 
-	if err != nil {
-		fmt.Println("Error ---> ", err)
-	}
+	settings.ErrorHandler(err)
+
 	var paginationUl selenium.WebElement
 	if len(ul) > 1 {
 		paginationUl = ul[1]
@@ -62,22 +64,16 @@ func PageNumberDolap(parameter string, min int, max int, output string, descFilt
 
 	liElements, err := paginationUl.FindElements(selenium.ByTagName, "a")
 
-	if err != nil {
-		fmt.Println("Li elements error --> ", err)
-	}
+	settings.ErrorHandler(err)
 
 	for _, v := range liElements {
 		text, err := v.Text()
-		if err != nil {
-			fmt.Println("Error --> ", err)
-		}
+		settings.ErrorHandler(err)
 
 		if text != "" {
 			textInteger, err := strconv.Atoi(text)
 
-			if err != nil {
-				fmt.Println("Error --> ", err)
-			}
+			settings.ErrorHandler(err)
 
 			if textInteger > topPage {
 				topPage = textInteger
@@ -85,134 +81,112 @@ func PageNumberDolap(parameter string, min int, max int, output string, descFilt
 		}
 	}
 
-	GetProduct(parameter, min, max, output, descFilter, show, driver, topPage)
+	GetProduct(parameter, min, max, output, descFilter, show, driver, topPage, ascending, descending)
 
 	if output != "" {
-		Output(output, Products)
+		Output(output, dolapProducts)
 	}
 }
 
-func GetProduct(parameter string, min int, max int, output string, descFilter string, show bool, driver selenium.WebDriver, intPage int) {
+func GetProduct(parameter string, min int, max int, output string, descFilter string, show bool, driver selenium.WebDriver, intPage int, ascending bool, descending bool) {
 
-	productMap = make(map[string]string)
+	url := "https://dolap.com/ara?q=" + parameter
 
-	fmt.Println(intPage)
+	if ascending {
+		url = url + "&sira=artan-fiyat"
+	} else if descending {
+		url = url + "&sira=azalan-fiyat"
+	}
+
 	for i := 1; i < intPage; i++ {
-		url := "https://dolap.com/ara?q=" + parameter + "&sayfa=" + strconv.Itoa(i)
+		productMap = make(map[string]string)
+		newUrl := url + "&sayfa=" + strconv.Itoa(i)
+		fmt.Println("İstek atılıyor --->", color.GreenString(newUrl))
 
-		fmt.Println("İstek atılıyor --->", color.GreenString(url))
+		fmt.Println("URL ------> ", newUrl)
 
-		err := driver.Get(url)
+		err := driver.Get(newUrl)
 
-		if err != nil {
-			fmt.Println("Get error --> ", err)
-		}
+		settings.ErrorHandler(err)
 
 		colHolders, err := driver.FindElements(selenium.ByCSSSelector, "div.col-holder")
-		if err != nil {
-			log.Fatalf("Hedef etiket bulunamadı: %v", err)
-		}
+		settings.ErrorHandler(err)
 
 		for _, holder := range colHolders {
 			imgBlock, err := holder.FindElement(selenium.ByCSSSelector, "div.img-block")
-			if err != nil {
-				fmt.Println("img-block bulunamadı:", err)
-				continue
-			}
+			settings.ErrorHandler(err)
 
 			aTag, err := imgBlock.FindElement(selenium.ByTagName, "a")
-			if err != nil {
-				fmt.Println("a etiketi bulunamadı:", err)
-				continue
-			}
+			settings.ErrorHandler(err)
 
 			href, err := aTag.GetAttribute("href")
-			if err != nil {
-				fmt.Println("Href bulunamadı:", err)
-			}
+			settings.ErrorHandler(err)
 
 			priceSpan, err := holder.FindElement(selenium.ByCSSSelector, "span.price")
-			if err != nil {
-				fmt.Println("Fiyat bulunamadı:", err)
-				continue
-			}
+			settings.ErrorHandler(err)
 
 			priceText, err := priceSpan.Text()
-			if err != nil {
-				fmt.Println("Fiyat metni alınamadı:", err)
-			}
+			settings.ErrorHandler(err)
 			productMap[href] = priceText
 		}
+		ProductDetail(productMap, min, max, descFilter, driver)
 	}
-	ProductDetail(productMap, min, max, descFilter, driver)
 
 }
 
 func ProductDetail(product map[string]string, min int, max int, descFilter string, driver selenium.WebDriver) {
 
 	for url, price := range product {
+
 		err := driver.Get(url)
 
-		if err != nil {
-			fmt.Println("Get error --> ", err)
-		}
-
+		settings.ErrorHandler(err)
 		elementDesc, err := driver.FindElement(selenium.ByClassName, "remarks-block")
 
-		if err != nil {
-			fmt.Println("Desc error --> ", err)
-		}
-
+		settings.ErrorHandler(err)
 		desc, err := elementDesc.FindElement(selenium.ByTagName, "p")
 
-		if err != nil {
-			fmt.Println("Element error --> ", err)
-		}
+		settings.ErrorHandler(err)
 
 		descText, err := desc.Text()
 
-		if err != nil {
-			fmt.Println("Desc error --> ", err)
+		settings.ErrorHandler(err)
+
+		splitInteger := strings.Split(price, " ")
+		money := splitInteger[0]
+
+		if strings.Contains(money, ".") {
+			money = strings.ReplaceAll(money, ".", "")
 		}
 
-		integerPrice, _ := strconv.Atoi(price)
+		integerPrice, err := strconv.Atoi(money)
+		settings.ErrorHandler(err)
 
 		if descFilter == "" && min == -1 && max == -1 {
-			newProduct := Product{url, descText, price}
-			Products = append(Products, newProduct)
-			Show(newProduct)
+			newProduct := settings.Product{url, descText, price}
+			dolapProducts = append(dolapProducts, newProduct)
+			settings.Show(newProduct)
 		} else if descFilter != "" && strings.Contains(descText, descFilter) && min == -1 && max == -1 {
-			newProduct := Product{url, descText, price}
-			Products = append(Products, newProduct)
-			Show(newProduct)
-		} else if descFilter == "" && ((min != -1 && min <= integerPrice) || (max != -1 && integerPrice <= max)) {
-			newProduct := Product{url, descText, price}
-			Products = append(Products, newProduct)
-			Show(newProduct)
+			newProduct := settings.Product{url, descText, price}
+			dolapProducts = append(dolapProducts, newProduct)
+			settings.Show(newProduct)
+		} else if descFilter == "" && (min != -1 && min <= integerPrice) || (max != -1 && integerPrice <= max) {
+			newProduct := settings.Product{url, descText, price}
+			dolapProducts = append(dolapProducts, newProduct)
+			settings.Show(newProduct)
 		} else if descFilter != "" && strings.Contains(descText, descFilter) && ((min != -1 && min <= integerPrice) || (max != -1 && integerPrice <= max)) {
-			newProduct := Product{url, descText, price}
-			Products = append(Products, newProduct)
-			Show(newProduct)
+			newProduct := settings.Product{url, descText, price}
+			dolapProducts = append(dolapProducts, newProduct)
+			settings.Show(newProduct)
 		}
-
 	}
 }
 
-func Show(products Product) {
-
-	fmt.Println(color.GreenString(products.URL))
-	fmt.Println(products.Desc)
-	fmt.Println(products.Price)
-	fmt.Println("---------------------------------------")
-}
-
-func Output(output string, prodcuts []Product) {
+func Output(output string, prodcuts []settings.Product) {
 
 	file, err := os.Create(output)
 
-	if err != nil {
-		fmt.Println("File create error --> ", err)
-	}
+	settings.ErrorHandler(err)
 
 	for _, v := range prodcuts {
 		file.WriteString(v.URL)
