@@ -41,7 +41,7 @@ func PageNumberDolap(parameter string, min int, max int, output string, descFilt
 
 	caps := selenium.Capabilities{}
 	caps.AddChrome(chrome.Capabilities{Args: []string{
-		// "--headless",
+		"--headless",
 	}})
 
 	driver, err := selenium.NewRemote(caps, "")

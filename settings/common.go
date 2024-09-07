@@ -24,7 +24,7 @@ func Show(product Product) {
 	var unicodeEmoji string
 	if strings.Contains(product.URL, "sahibinden") {
 		unicodeEmoji = "\U0001F7E8"
-		fmt.Println(unicodeEmoji, color.GreenString("Sahibinden"))
+		fmt.Println(unicodeEmoji, color.YellowString("Sahibinden"))
 		fmt.Println(color.YellowString(product.Desc))
 
 	} else {

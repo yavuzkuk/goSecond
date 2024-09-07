@@ -13,6 +13,7 @@ import (
 )
 
 var topPageNumber int
+var sahibindenLimit int = 0
 var SahinindenProducts []settings.Product
 
 func PageSahibinden(parameter string, min int, max int, descFilter string, show bool, output string, ascending bool, descending bool, limit int) {
@@ -75,14 +76,14 @@ func PageSahibinden(parameter string, min int, max int, descFilter string, show 
 	}
 
 	driver.Close()
-	Sahibinden(parameter, min, max, descFilter, show, ascending, descending)
+	Sahibinden(parameter, min, max, descFilter, show, ascending, descending, limit)
 
 	if output != "" {
 		SahibindenOutput(output, SahinindenProducts)
 	}
 }
 
-func Sahibinden(parameter string, min int, max int, descFilter string, show bool, ascending bool, descending bool) {
+func Sahibinden(parameter string, min int, max int, descFilter string, show bool, ascending bool, descending bool, limit int) {
 
 	var baseUrl string = "https://www.sahibinden.com/ikinci-el-ve-sifir-alisveris"
 
@@ -117,8 +118,6 @@ func Sahibinden(parameter string, min int, max int, descFilter string, show bool
 		} else if descending {
 			url = url + "&sorting=price_desc"
 		}
-
-		fmt.Println("İstek atılıyorrrr -----------------> ", url)
 
 		service, err := selenium.NewChromeDriverService("C:\\WebDriver\\chromedriver.exe", 4444)
 
@@ -230,5 +229,4 @@ func SahibindenOutput(output string, sahibinden []settings.Product) {
 		file.WriteString(v.Price)
 		file.WriteString("-------------------------------------------------")
 	}
-
 }

@@ -21,7 +21,7 @@ var rootCmd = &cobra.Command{
 			panic("You can't give this parameters at the same time")
 		}
 
-		// request.PageSahibinden(product, min, max, descFilter, show, output, ascending, descending, limit)
+		request.PageSahibinden(product, min, max, descFilter, show, output, ascending, descending, limit)
 		request.PageNumberDolap(product, min, max, output, descFilter, show, ascending, descending, limit)
 	},
 }
@@ -55,4 +55,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&ascending, "asc", "", false, "Ascending order")
 	rootCmd.Flags().BoolVarP(&descending, "desc", "", false, "Descending order")
 	rootCmd.Flags().IntVarP(&limit, "limit", "l", -1, "Limit output")
+	//limit function not added
+
+	rootCmd.MarkFlagRequired("product")
 }
